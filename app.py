@@ -7,12 +7,13 @@ app.secret_key = 'restaurante_secret_key_123'
 # Carta inicial de productos
 carta_inicial = [
     {'id': '1', 'nombre': 'Sopa Verde', 'precio': 8.00, 'tipo': 'normal'},
-    {'id': '2', 'nombre': 'Chupe de Olluco', 'precio': 10.00, 'tipo': 'normal'},
-    {'id': '3', 'nombre': 'Segundo de Pollo', 'precio': 12.00, 'tipo': 'normal'},
-    {'id': '4', 'nombre': 'Chaufa Especial', 'precio': 15.00, 'tipo': 'normal'},
-    {'id': '5', 'nombre': 'Agua Mineral', 'precio': 2.50, 'tipo': 'normal'},
-    {'id': '6', 'nombre': 'Café Pasado', 'precio': 3.50, 'tipo': 'normal'},
-    {'id': '7', 'nombre': 'Pan con Chicharrón', 'precio': 7.00, 'tipo': 'normal'}
+    {'id': '2', 'nombre': 'Chupe de Olluco', 'precio': 8.00, 'tipo': 'normal'},
+    {'id': '3', 'nombre': 'Patasca', 'precio': 13.00, 'tipo': 'normal'},
+    {'id': '4', 'nombre': 'Segundo o platillo', 'precio': 9.50, 'tipo': 'normal'},
+    {'id': '5', 'nombre': 'Chaufa', 'precio': 13.00, 'tipo': 'normal'},
+    {'id': '6', 'nombre': 'Infuciones', 'precio': 2.00, 'tipo': 'normal'},
+    {'id': '7', 'nombre': 'Café Pasado', 'precio': 2.00, 'tipo': 'normal'},
+    {'id': '8', 'nombre': 'Pan con huevo o queso', 'precio': 2.50, 'tipo': 'normal'}
 ]
 
 def obtener_carta():

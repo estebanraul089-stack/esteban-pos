@@ -169,9 +169,7 @@
                                 <strong>{{ item.nombre }}</strong><br>
                                 <span style="font-size: 1.1em;">S/ {{ "%.2f"|format(item.precio) }}</span>
                             </div>
-                            <form action="/agregar/{{ item.id }}" method="POST">
-                                <button type="submit" class="btn-agregar">+ AGREGAR</button>
-                            </form>
+                            <button type="button" class="btn-agregar" onclick="agregarProducto('{{ item.id }}')">+ AGREGAR</button>
                         </div>
                     {% endif %}
                 {% endfor %}
@@ -182,10 +180,10 @@
                         <strong>Extra / Especial</strong><br>
                         <small>Ingresar monto libre</small>
                     </div>
-                    <form action="/agregar_extra" method="POST" style="margin-top: 5px;">
-                        <input type="number" step="0.5" name="monto_extra" placeholder="Monto S/" class="input-monto" style="margin-bottom: 5px; text-align: center;" required>
-                        <button type="submit" class="btn-agregar">+ AGREGAR</button>
-                    </form>
+                    <div style="margin-top: 5px;">
+                        <input type="number" id="input_extra" step="0.5" placeholder="Monto S/" class="input-monto" style="margin-bottom: 5px; text-align: center;">
+                        <button type="button" class="btn-agregar" onclick="agregarExtra()">+ AGREGAR</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -193,7 +191,7 @@
         <!-- Boleta y Cobro -->
         <div class="seccion boleta">
             <h2>Boleta Actual</h2>
-            <ul>
+            <ul id="lista-boleta">
                 {% for item in boleta %}
                 <li>
                     <span>{{ item.nombre }}</span>
@@ -204,7 +202,7 @@
             
             <div class="total-box">
                 <div>TOTAL A PAGAR</div>
-                <div class="total-monto">S/ {{ "%.2f"|format(total) }}</div>
+                <div class="total-monto" id="total-monto">S/ {{ "%.2f"|format(total) }}</div>
             </div>
 
             <!-- Cobro -->
@@ -274,6 +272,29 @@
             </div>
         </div>
     </div>
+
+    <!-- JavaScript para agregar productos sin parpadear ni recargar -->
+    <script>
+        function agregarProducto(itemId) {
+            fetch('/agregar/' + itemId, { method: 'POST' })
+            .then(() => {
+                location.reload();
+            });
+        }
+
+        function agregarExtra() {
+            let monto = document.getElementById('input_extra').value;
+            if (!monto || monto <= 0) return;
+            
+            let formData = new FormData();
+            formData.append('monto_extra', monto);
+
+            fetch('/agregar_extra', { method: 'POST', body: formData })
+            .then(() => {
+                location.reload();
+            });
+        }
+    </script>
 
 </body>
 </html>

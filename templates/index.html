@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Restaurante</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #333333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 15px;
+            background-color: var(--bg);
+            color: var(--text);
+        }
+
+        /* Banner de Ganancias Superiores */
+        .banner-ganancias {
+            background: linear-gradient(135deg, #1e824c, #27ae60);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .monto-ganancias {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .btn-reset {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-reset:hover {
+            background-color: #c0392b;
+            border-color: #c0392b;
+        }
+
+        h1, h2, h3 { color: var(--primary); margin-top: 0; }
+
+        .contenedor {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .seccion {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .carta { flex: 2; min-width: 320px; }
+        .boleta { flex: 1; min-width: 280px; border-top: 5px solid var(--accent); }
+        .admin-panel { flex: 100%; background: #eef2f5; margin-top: 10px; }
+
+        .grid-productos {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .card-producto {
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+        }
+
+        .cat-sopa { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+        .cat-segundo { background: linear-gradient(135deg, #e67e22, #f39c12); }
+        .cat-bebida { background: linear-gradient(135deg, #2980b9, #3498db); }
+        .cat-pan { background: linear-gradient(135deg, #8e44ad, #9b59b6); }
+        .cat-extra { background: linear-gradient(135deg, #34495e, #2c3e50); }
+
+        .btn-agregar {
+            background-color: rgba(255, 255, 255, 0.25);
+            color: white;
+            border: 2px solid white;
+            padding: 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-agregar:hover { background-color: white; color: #333; }
+
+        ul { list-style: none; padding: 0; max-height: 220px; overflow-y: auto; }
+        li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; display: flex; justify-content: space-between; }
+
+        .total-box { background-color: #ecf0f1; padding: 12px; border-radius: 8px; margin: 15px 0; text-align: center; }
+        .total-monto { font-size: 1.5em; color: #2c3e50; font-weight: bold; }
+
+        .input-monto {
+            width: 100%;
+            padding: 10px;
+            font-size: 1.05em;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            box-sizing: border-box;
+            margin-bottom: 8px;
+        }
+
+        .btn-cobrar { background-color: #27ae60; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-nueva { background-color: #e74c3c; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+
+        .admin-grid { display: flex; flex-wrap: wrap; gap: 20px; }
+        .form-group { flex: 1; min-width: 250px; background: white; padding: 15px; border-radius: 8px; }
+        .btn-admin { background-color: #3498db; color: white; border: none; padding: 8px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .btn-del { background-color: #c0392b; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <!-- Banner Superior de Caja del Día -->
+    <div class="banner-ganancias">
+        <div>
+            <div style="font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px;">💰 Ventas Totales del Día</div>
+            <div class="monto-ganancias">S/ {{ "%.2f"|format(ganancias) }}</div>
+            <small>Atenciones cobradas: {{ ventas_num }}</small>
+        </div>
+        <form action="/reiniciar_caja" method="POST" onsubmit="return confirm('¿Seguro que deseas reiniciar la caja del día a S/ 0.00?');">
+            <button type="submit" class="btn-reset">Cerrar Día / Cero S/</button>
+        </form>
+    </div>
+
+    <div class="contenedor">
+        <!-- Carta de Productos -->
+        <div class="seccion carta">
+            <h2>Carta del Día</h2>
+            <div class="grid-productos">
+                {% for item in carta %}
+                    {% if item.tipo == 'normal' %}
+                        {% set clase_cat = 'cat-sopa' %}
+                        {% if 'Segundo' in item.nombre or 'Chaufa' in item.nombre %}
+                            {% set clase_cat = 'cat-segundo' %}
+                        {% elif 'Agua' in item.nombre or 'Café' in item.nombre %}
+                            {% set clase_cat = 'cat-bebida' %}
+                        {% elif 'Pan' in item.nombre %}
+                            {% set clase_cat = 'cat-pan' %}
+                        {% endif %}
+
+                        <div class="card-producto {{ clase_cat }}">
+                            <div>
+                                <strong>{{ item.nombre }}</strong><br>
+                                <span style="font-size: 1.1em;">S/ {{ "%.2f"|format(item.precio) }}</span>
+                            </div>
+                            <form action="/agregar/{{ item.id }}" method="POST">
+                                <button type="submit" class="btn-agregar">+ AGREGAR</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Tarjeta para Ingreso Directo de Monto Extra -->
+                <div class="card-producto cat-extra">
+                    <div>
+                        <strong>Extra / Especial</strong><br>
+                        <small>Ingresar monto libre</small>
+                    </div>
+                    <form action="/agregar_extra" method="POST" style="margin-top: 5px;">
+                        <input type="number" step="0.5" name="monto_extra" placeholder="Monto S/" class="input-monto" style="margin-bottom: 5px; text-align: center;" required>
+                        <button type="submit" class="btn-agregar">+ AGREGAR</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Boleta y Cobro -->
+        <div class="seccion boleta">
+            <h2>Boleta Actual</h2>
+            <ul>
+                {% for item in boleta %}
+                <li>
+                    <span>{{ item.nombre }}</span>
+                    <strong>S/ {{ "%.2f"|format(item.precio) }}</strong>
+                </li>
+                {% endfor %}
+            </ul>
+            
+            <div class="total-box">
+                <div>TOTAL A PAGAR</div>
+                <div class="total-monto">S/ {{ "%.2f"|format(total) }}</div>
+            </div>
+
+            <!-- Cobro -->
+            <form action="/cobrar" method="POST">
+                <input type="number" step="0.5" name="pago" placeholder="Dinero recibido (S/)" class="input-monto" required>
+                <button type="submit" class="btn-cobrar">💵 CALCULAR VUELTO</button>
+            </form>
+
+            {% if vuelto is not none %}
+                <div style="margin-top: 10px; padding: 10px; border-radius: 6px; text-align: center; font-size: 1.1em; background: #d4edda; color: #155724;">
+                    {% if vuelto is number %}
+                        <strong>Vuelto: S/ {{ "%.2f"|format(vuelto) }}</strong>
+                    {% else %}
+                        <strong style="color: #721c24;">⚠️ {{ vuelto }}</strong>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <form action="/nueva_boleta" method="POST">
+                <button type="submit" class="btn-nueva">🔄 Siguiente Cliente</button>
+            </form>
+        </div>
+
+        <!-- Panel de Administración -->
+        <div class="seccion admin-panel">
+            <h2>⚙️ Configuración del Menú (Agregar, Editar y Eliminar)</h2>
+            <div class="admin-grid">
+                
+                <div class="form-group">
+                    <h3>➕ Nuevo Producto</h3>
+                    <form action="/admin/agregar_producto" method="POST">
+                        <input type="text" name="nombre" placeholder="Nombre plato/bebida" class="input-monto" required>
+                        <input type="number" step="0.5" name="precio" placeholder="Precio S/" class="input-monto" required>
+                        <button type="submit" class="btn-admin">Guardar Producto</button>
+                    </form>
+                </div>
+
+                <div class="form-group">
+                    <h3>✏️ Modificar Precio/Nombre</h3>
+                    <form action="/admin/editar_producto" method="POST">
+                        <select name="item_id" class="input-monto" required>
+                            <option value="">Seleccione Producto</option>
+                            {% for item in carta if item.tipo == 'normal' %}
+                                <option value="{{ item.id }}">{{ item.nombre }} (S/ {{ "%.2f"|format(item.precio) }})</option>
+                            {% endfor %}
+                        </select>
+                        <input type="text" name="nuevo_nombre" placeholder="Nuevo Nombre (Opcional)" class="input-monto">
+                        <input type="number" step="0.5" name="nuevo_precio" placeholder="Nuevo Precio S/" class="input-monto">
+                        <button type="submit" class="btn-admin">Actualizar</button>
+                    </form>
+                </div>
+
+                <div class="form-group">
+                    <h3>🗑️ Eliminar Producto</h3>
+                    <ul style="max-height: 150px;">
+                        {% for item in carta if item.tipo == 'normal' %}
+                        <li>
+                            <span>{{ item.nombre }}</span>
+                            <form action="/admin/eliminar_producto/{{ item.id }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn-del">X</button>
+                            </form>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

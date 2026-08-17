@@ -110,7 +110,17 @@
         .btn-agregar:hover { background-color: white; color: #333; }
 
         ul { list-style: none; padding: 0; max-height: 220px; overflow-y: auto; }
-        li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; display: flex; justify-content: space-between; }
+        li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+
+        .badge-cantidad {
+            background-color: var(--accent);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 6px;
+        }
 
         .total-box { background-color: #ecf0f1; padding: 12px; border-radius: 8px; margin: 15px 0; text-align: center; }
         .total-monto { font-size: 1.5em; color: #2c3e50; font-weight: bold; }
@@ -132,6 +142,10 @@
         .form-group { flex: 1; min-width: 250px; background: white; padding: 15px; border-radius: 8px; }
         .btn-admin { background-color: #3498db; color: white; border: none; padding: 8px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; }
         .btn-del { background-color: #c0392b; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+        
+        .box-vuelto { margin-top: 10px; padding: 10px; border-radius: 6px; text-align: center; font-size: 1.1em; }
+        .vuelto-exito { background: #d4edda; color: #155724; }
+        .vuelto-error { background: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
@@ -140,8 +154,8 @@
     <div class="banner-ganancias">
         <div>
             <div style="font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px;">💰 Ventas Totales del Día</div>
-            <div class="monto-ganancias">S/ {{ "%.2f"|format(ganancias) }}</div>
-            <small>Atenciones cobradas: {{ ventas_num }}</small>
+            <div class="monto-ganancias" id="monto-ganancias">S/ {{ "%.2f"|format(ganancias) }}</div>
+            <small>Atenciones cobradas: <span id="ventas-num">{{ ventas_num }}</span></small>
         </div>
         <form action="/reiniciar_caja" method="POST" onsubmit="return confirm('¿Seguro que deseas reiniciar la caja del día a S/ 0.00?');">
             <button type="submit" class="btn-reset">Cerrar Día / Cero S/</button>
@@ -194,8 +208,8 @@
             <ul id="lista-boleta">
                 {% for item in boleta %}
                 <li>
-                    <span>{{ item.nombre }}</span>
-                    <strong>S/ {{ "%.2f"|format(item.precio) }}</strong>
+                    <span>{{ item.nombre }} {% if item.cantidad > 1 %}<span class="badge-cantidad">x{{ item.cantidad }}</span>{% endif %}</span>
+                    <strong>S/ {{ "%.2f"|format(item.subtotal) }}</strong>
                 </li>
                 {% endfor %}
             </ul>
@@ -206,24 +220,20 @@
             </div>
 
             <!-- Cobro -->
-            <form action="/cobrar" method="POST">
-                <input type="number" step="0.5" name="pago" placeholder="Dinero recibido (S/)" class="input-monto" required>
+            <form id="form-cobrar" onsubmit="calcularVuelto(event)">
+                <input type="number" step="0.5" id="input-pago" placeholder="Dinero recibido (S/)" class="input-monto" required>
                 <button type="submit" class="btn-cobrar">💵 CALCULAR VUELTO</button>
             </form>
 
-            {% if vuelto is not none %}
-                <div style="margin-top: 10px; padding: 10px; border-radius: 6px; text-align: center; font-size: 1.1em; background: #d4edda; color: #155724;">
-                    {% if vuelto is number %}
+            <div id="contenedor-vuelto">
+                {% if vuelto is not none %}
+                    <div class="box-vuelto vuelto-exito">
                         <strong>Vuelto: S/ {{ "%.2f"|format(vuelto) }}</strong>
-                    {% else %}
-                        <strong style="color: #721c24;">⚠️ {{ vuelto }}</strong>
-                    {% endif %}
-                </div>
-            {% endif %}
+                    </div>
+                {% endif %}
+            </div>
 
-            <form action="/nueva_boleta" method="POST">
-                <button type="submit" class="btn-nueva">🔄 Siguiente Cliente</button>
-            </form>
+            <button type="button" class="btn-nueva" onclick="siguienteCliente()">🔄 Siguiente Cliente</button>
         </div>
 
         <!-- Panel de Administración -->
@@ -273,25 +283,86 @@
         </div>
     </div>
 
-    <!-- JavaScript para agregar productos sin parpadear ni recargar -->
+    <!-- JavaScript dinámico sin recarga -->
     <script>
-        function agregarProducto(itemId) {
-            fetch('/agregar/' + itemId, { method: 'POST' })
-            .then(() => {
-                location.reload();
+        function actualizarDOMBoleta(data) {
+            const ul = document.getElementById('lista-boleta');
+            ul.innerHTML = '';
+            
+            data.boleta.forEach(item => {
+                const li = document.createElement('li');
+                let badge = item.cantidad > 1 ? `<span class="badge-cantidad">x${item.cantidad}</span>` : '';
+                li.innerHTML = `<span>${item.nombre} ${badge}</span><strong>S/ ${item.subtotal.toFixed(2)}</strong>`;
+                ul.appendChild(li);
             });
+
+            document.getElementById('total-monto').innerText = `S/ ${data.total.toFixed(2)}`;
+        }
+
+        function agregarProducto(itemId) {
+            fetch('/agregar/' + itemId, { 
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(data => actualizarDOMBoleta(data));
         }
 
         function agregarExtra() {
-            let monto = document.getElementById('input_extra').value;
+            let input = document.getElementById('input_extra');
+            let monto = input.value;
             if (!monto || monto <= 0) return;
-            
-            let formData = new FormData();
-            formData.append('monto_extra', monto);
 
-            fetch('/agregar_extra', { method: 'POST', body: formData })
+            fetch('/agregar_extra', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ monto_extra: monto })
+            })
+            .then(res => res.json())
+            .then(data => {
+                actualizarDOMBoleta(data);
+                input.value = '';
+            });
+        }
+
+        function calcularVuelto(event) {
+            event.preventDefault(); // Evita que la página se reinicie
+            let pago = document.getElementById('input-pago').value;
+            let contenedor = document.getElementById('contenedor-vuelto');
+
+            fetch('/cobrar', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ pago: pago })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.vuelto !== null && data.vuelto !== undefined) {
+                    contenedor.innerHTML = `<div class="box-vuelto vuelto-exito"><strong>Vuelto: ${data.vuelto}</strong></div>`;
+                    document.getElementById('monto-ganancias').innerText = `S/ ${data.ganancias.toFixed(2)}`;
+                    document.getElementById('ventas-num').innerText = data.ventas_num;
+                } else if (data.error) {
+                    contenedor.innerHTML = `<div class="box-vuelto vuelto-error"><strong>⚠️ ${data.error}</strong></div>`;
+                }
+            });
+        }
+
+        function siguienteCliente() {
+            fetch('/nueva_boleta', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
             .then(() => {
-                location.reload();
+                document.getElementById('lista-boleta').innerHTML = '';
+                document.getElementById('total-monto').innerText = 'S/ 0.00';
+                document.getElementById('input-pago').value = '';
+                document.getElementById('contenedor-vuelto').innerHTML = '';
             });
         }
     </script>
